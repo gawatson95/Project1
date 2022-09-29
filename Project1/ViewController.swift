@@ -17,7 +17,13 @@ class ViewController: UITableViewController {
         navigationItem.largeTitleDisplayMode = .never
         
         navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareAppTapped))
         
+        performSelector(inBackground: #selector(getImages), with: nil)
+
+    }
+    
+    @objc func getImages() {
         let fm = FileManager.default
         let path = Bundle.main.resourcePath!
         let items = try! fm.contentsOfDirectory(atPath: path)
@@ -28,7 +34,8 @@ class ViewController: UITableViewController {
             }
         }
         pictures.sort()
-        print(pictures)
+        
+        tableView.performSelector(onMainThread: #selector(UITableView.reloadData), with: nil, waitUntilDone: false)
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -48,6 +55,14 @@ class ViewController: UITableViewController {
             vc.totalPictures = pictures.count
             navigationController?.pushViewController(vc, animated: true)
         }
+    }
+    
+    @objc func shareAppTapped() {
+        guard let appURL = URL(string: "https://www.stormchaser.com") else { return }
+        
+        let vc = UIActivityViewController(activityItems: [appURL], applicationActivities: [])
+        vc.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItem
+        present(vc, animated: true)
     }
 }
 
