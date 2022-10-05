@@ -9,6 +9,7 @@ import UIKit
 
 class ViewController: UITableViewController {
     var pictures = [String]()
+    var imageViews = [String:Int]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,7 +21,16 @@ class ViewController: UITableViewController {
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareAppTapped))
         
         performSelector(inBackground: #selector(getImages), with: nil)
-
+        
+        let defaults = UserDefaults.standard
+        if let savedData = defaults.object(forKey: "ImageView") as? Data {
+            let decoder = JSONDecoder()
+            do {
+                imageViews = try decoder.decode([String:Int].self, from: savedData)
+            } catch {
+                print("ERROR: \(error.localizedDescription)")
+            }
+        }
     }
     
     @objc func getImages() {
@@ -35,7 +45,9 @@ class ViewController: UITableViewController {
         }
         pictures.sort()
         
-        tableView.performSelector(onMainThread: #selector(UITableView.reloadData), with: nil, waitUntilDone: false)
+        DispatchQueue.main.async {
+            self.tableView.performSelector(onMainThread: #selector(UITableView.reloadData), with: nil, waitUntilDone: false)
+        }
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -44,7 +56,12 @@ class ViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Picture", for: indexPath)
-        cell.textLabel?.text = pictures[indexPath.row]
+        
+        var config = UIListContentConfiguration.cell()
+        config.text = pictures[indexPath.row]
+        config.secondaryText = "Views: \(imageViews[pictures[indexPath.row]] ?? 0)"
+        cell.contentConfiguration = config
+        
         return cell
     }
     
@@ -55,6 +72,11 @@ class ViewController: UITableViewController {
             vc.totalPictures = pictures.count
             navigationController?.pushViewController(vc, animated: true)
         }
+        
+        let view = (imageViews[pictures[indexPath.row]] ?? 0) + 1
+        imageViews.updateValue(view, forKey: pictures[indexPath.row])
+        saveViewCount()
+        tableView.reloadData()
     }
     
     @objc func shareAppTapped() {
@@ -63,6 +85,15 @@ class ViewController: UITableViewController {
         let vc = UIActivityViewController(activityItems: [appURL], applicationActivities: [])
         vc.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItem
         present(vc, animated: true)
+    }
+    
+    func saveViewCount() {
+        let encoder = JSONEncoder()
+        
+        if let savedData = try? encoder.encode(imageViews) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "ImageView")
+        }
     }
 }
 
