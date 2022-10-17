@@ -16,12 +16,15 @@ class DetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        assert(selectedImage == nil, "Image did not load")
+        
         title = "\(selectedPictureNumber) of \(totalPictures)"
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareTapped))
 
         if let imageToLoad = selectedImage {
             imageView.image = UIImage(named: imageToLoad)
         }
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
